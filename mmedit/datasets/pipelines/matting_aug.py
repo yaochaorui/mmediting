@@ -555,3 +555,74 @@ class GenerateSoftSeg(object):
                      f'dilate_iter_range={self.dilate_iter_range}, '
                      f'blur_ksizes={self.blur_ksizes})')
         return repr_str
+
+
+# to fit pad #TODO ycr
+@PIPELINES.register_module()
+class CutEdge(object):
+
+    def __init__(self, keys, mode='Test') -> None:
+        self.keys = keys
+        self.mode = mode
+
+    def __call__(self, results, scale_type=cv2.INTER_LANCZOS4):
+        # generate two channel trimap
+        trimap_o = results[
+            'ori_trimap'] / 255.0 if self.mode == 'Test' else results[
+                'trimap'][..., 0]
+        h, w = trimap_o.shape[:2]
+        trimap = np.zeros((h, w, 2))
+        trimap[trimap_o == 1, 1] = 1
+        trimap[trimap_o == 0, 0] = 1
+
+        # original two channel trimap
+        results['trimap_o'] = trimap
+        results['trimap'] = trimap
+        for key in self.keys:
+            if isinstance(results[key], list):
+                results[key] = [
+                    self._cutedge(v, scale_type) for v in results[key]
+                ]
+            else:
+                results[key] = self._cutedge(results[key], scale_type)
+
+        return results
+
+    @staticmethod
+    def _cutedge(img, scale_type):
+        H, W = img.shape[:2]
+        scale = 1.0
+        h = int(np.ceil(scale * H / 8) * 8)
+        w = int(np.ceil(scale * W / 8) * 8)
+        img = cv2.resize(img, (w, h), interpolation=scale_type)
+        return img
+
+
+@PIPELINES.register_module()
+class TransformTrimap(object):
+
+    def __init__(self, arg=None) -> None:
+        super().__init__()
+        pass
+
+    def __call__(self, results):
+        trimap = results['trimap']
+        h, w = trimap.shape[:2]
+        clicks = np.zeros((h, w, 6))
+        for k in range(2):
+            if (np.count_nonzero(trimap[:, :, k]) > 0):
+                dt_mask = -self._dt(1 - trimap[:, :, k])**2
+                L = 320
+                clicks[:, :, 3 * k] = np.exp(dt_mask / (2 * ((0.02 * L)**2)))
+                clicks[:, :,
+                       3 * k + 1] = np.exp(dt_mask / (2 * ((0.08 * L)**2)))
+                clicks[:, :,
+                       3 * k + 2] = np.exp(dt_mask / (2 * ((0.16 * L)**2)))
+
+        results['transformed_trimap'] = clicks
+        return results
+
+    @staticmethod
+    def _dt(a):
+        return cv2.distanceTransform((a * 255).astype(np.uint8), cv2.DIST_L2,
+                                     0)
