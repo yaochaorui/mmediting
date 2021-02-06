@@ -567,9 +567,11 @@ class CutEdge(object):
 
     def __call__(self, results, scale_type=cv2.INTER_LANCZOS4):
         # generate two channel trimap
+
         trimap_o = results[
-            'ori_trimap'] / 255.0 if self.mode == 'Test' else results[
-                'trimap'][..., 0]
+            'ori_trimap'] / 255.0 if self.mode == 'Test' else results['trimap']
+        if len(trimap_o.shape) > 2:
+            trimap_o = trimap_o.squeeze(2)
         h, w = trimap_o.shape[:2]
         trimap = np.zeros((h, w, 2))
         trimap[trimap_o == 1, 1] = 1
