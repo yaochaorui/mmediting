@@ -4,6 +4,8 @@ import random
 import cv2
 import mmcv
 import numpy as np
+from PIL import Image
+from pymatting import estimate_foreground_ml, load_image
 
 from ..registry import PIPELINES
 from .utils import adjust_gamma, random_choose_unknown
@@ -628,3 +630,28 @@ class TransformTrimap(object):
     def _dt(a):
         return cv2.distanceTransform((a * 255).astype(np.uint8), cv2.DIST_L2,
                                      0)
+
+
+@PIPELINES.register_module()
+class ExtendFg(object):
+    """Extend foreground to the whole image.
+
+    """
+
+    def __call__(self, results):
+        """Call function.
+
+        Args:
+            results (dict): A dict containing the necessary information and
+                data for augmentation.
+
+        Returns:
+            dict: A dict containing the processed data and information.
+        """
+
+        image = load_image(results['fg_path'], 'RGB')
+        alpha = load_image(results['alpha_path'], 'GRAY')
+        F = estimate_foreground_ml(image, alpha, return_background=False)
+        results['fg'] = Image.fromarray(np.uint8(F * 255))
+
+        return results
