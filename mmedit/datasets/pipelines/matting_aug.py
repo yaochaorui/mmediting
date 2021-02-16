@@ -652,6 +652,6 @@ class ExtendFg(object):
         image = load_image(results['fg_path'], 'RGB')
         alpha = load_image(results['alpha_path'], 'GRAY')
         F = estimate_foreground_ml(image, alpha, return_background=False)
-        results['fg'] = Image.fromarray(np.uint8(F * 255))
+        results['fg'] = np.uint8(F * 255)
 
         return results
