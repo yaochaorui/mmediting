@@ -4,7 +4,6 @@ import random
 import cv2
 import mmcv
 import numpy as np
-from PIL import Image
 from pymatting import estimate_foreground_ml, load_image
 
 from ..registry import PIPELINES
