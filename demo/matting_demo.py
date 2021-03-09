@@ -29,7 +29,6 @@ def main():
     pred_alpha = matting_inference(model, args.img_path,
                                    args.trimap_path) * 255
 
-    mmcv.imwrite(pred_alpha, args.save_path)
     if args.imshow:
         mmcv.imshow(pred_alpha, 'predicted alpha matte')
 

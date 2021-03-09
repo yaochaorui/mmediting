@@ -35,7 +35,7 @@ class MergeFgAndBg:
         Returns:
             dict: A dict containing the processed data and information.
         """
-        alpha = results['alpha'][..., None].astype(np.float32) / 255.
+        alpha = results['alpha'].astype(np.float32) / 255.
         fg = results['fg']
         bg = results['bg']
         merged = fg * alpha + (1. - alpha) * bg
@@ -602,6 +602,8 @@ class TransformTrimap:
             dict: A dict containing the processed data and information.
         """
         trimap = results['trimap']
+        if len(trimap.shape) != 2:
+            trimap = trimap.squeeze()
         assert len(trimap.shape) == 2
         h, w = trimap.shape[:2]
         # generate two-channel trimap
