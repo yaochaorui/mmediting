@@ -26,8 +26,8 @@ bg_dir = './data/coco/train2014'
 img_norm_cfg = dict(
     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], to_rgb=True)
 train_pipeline = [
-    dict(type='LoadImageFromFile', key='alpha', flag='grayscale'),
-    dict(type='LoadImageFromFile', key='fg'),
+    dict(type='LoadImageFromFile', key='alpha', flag='grayscale', use_cache=True),
+    dict(type='LoadImageFromFile', key='fg', use_cache=True),
     dict(type='RandomLoadResizeBg', bg_dir=bg_dir),
     dict(
         type='CompositeFg',
@@ -73,26 +73,25 @@ train_pipeline = [
         'two_channel_trimap'
     ]),
     dict(type='Normalize', keys=['merged'], save_original=True, **img_norm_cfg),
-    dict(type='Collect', keys=['merged', 'alpha', 'trimap_transformed'], meta_keys=[]),
-    dict(type='ImageToTensor', keys=['merged', 'alpha', 'trimap_transformed']),
-    dict(type='FormatTrimap', to_onehot=True),
+    dict(type='Collect', keys=['merged', 'alpha', 'trimap_transformed' ,'trimap'], meta_keys=[]),
+    dict(type='ImageToTensor', keys=['merged', 'alpha', 'trimap_transformed', 'trimap']),
 ]
 test_pipeline = [
     dict(
         type='LoadImageFromFile',
         key='alpha',
         flag='grayscale',
-        save_original_img=True),
+        save_original_img=True, use_cache=True),
     dict(
         type='LoadImageFromFile',
         key='trimap',
         flag='grayscale',
-        save_original_img=True),
+        save_original_img=True, use_cache=True),
     dict(
         type='LoadImageFromFile',
         key='merged',
         channel_order='rgb',
-        save_original_img=True),
+        save_original_img=True, use_cache=True),
     dict(type='Pad', keys=['trimap', 'merged'],ds_factor=32, mode='reflect'),
     dict(type='TransformTrimap'),
     dict(type='RescaleToZeroOne', keys=['merged', 'trimap','ori_merged','two_channel_trimap']),
@@ -107,7 +106,7 @@ test_pipeline = [
     dict(type='FormatTrimap', to_onehot=True),
 ]
 data = dict(
-    workers_per_gpu=8,
+    workers_per_gpu=0,
     train_dataloader=dict(samples_per_gpu=10, drop_last=True),
     val_dataloader=dict(samples_per_gpu=1),
     test_dataloader=dict(samples_per_gpu=1),
@@ -140,7 +139,7 @@ lr_config = dict(
 
 # checkpoint saving
 checkpoint_config = dict(interval=2000, by_epoch=False)
-evaluation = dict(interval=10, save_image=False)
+evaluation = dict(interval=10000, save_image=False)
 log_config = dict(
     interval=1000,
     hooks=[

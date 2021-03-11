@@ -19,6 +19,13 @@ model = dict(
 train_cfg = dict(train_backbone=True)
 test_cfg = dict(metrics=['SAD', 'MSE', 'GRAD', 'CONN'])
 
+mc_cfg = dict(
+    backend='memcached',
+    server_list_config_file = "/mnt/lustre/share/memcached_client/server_list.conf",
+    client_config_file = "/mnt/lustre/share/memcached_client/client.conf",
+    sys_path='/mnt/lustre/share/pymc/py3'
+)
+
 # dataset settings
 dataset_type = 'AdobeComp1kDataset'
 data_root = 'data/adobe_composition-1k'
@@ -75,7 +82,6 @@ train_pipeline = [
     dict(type='Normalize', keys=['merged'], save_original=True, **img_norm_cfg),
     dict(type='Collect', keys=['merged', 'alpha', 'trimap'], meta_keys=[]),
     dict(type='ImageToTensor', keys=['merged', 'alpha', 'trimap']),
-    dict(type='FormatTrimap', to_onehot=True),
 ]
 test_pipeline = [
     dict(
@@ -107,8 +113,8 @@ test_pipeline = [
     dict(type='FormatTrimap', to_onehot=True),
 ]
 data = dict(
-    workers_per_gpu=8,
-    train_dataloader=dict(samples_per_gpu=10, drop_last=True),
+    workers_per_gpu=4,
+    train_dataloader=dict(samples_per_gpu=1, drop_last=True),
     val_dataloader=dict(samples_per_gpu=1),
     test_dataloader=dict(samples_per_gpu=1),
     train=dict(
@@ -140,7 +146,7 @@ lr_config = dict(
 
 # checkpoint saving
 checkpoint_config = dict(interval=2000, by_epoch=False)
-evaluation = dict(interval=10, save_image=False)
+evaluation = dict(interval=10000, save_image=False)
 log_config = dict(
     interval=1000,
     hooks=[

@@ -35,7 +35,8 @@ alpha_dirs = [
     f'{data_root}Training_set/Other/alpha'
 ]
 img_norm_cfg = dict(
-    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225], to_rgb=True)
+    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+
 train_pipeline = [
     dict(
         type='LoadImageFromFile',
@@ -131,7 +132,7 @@ data = dict(
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'test_list.json',
+        ann_file=data_root + 'tempval.json',
         data_prefix=data_root,
         pipeline=test_pipeline),
     test=dict(

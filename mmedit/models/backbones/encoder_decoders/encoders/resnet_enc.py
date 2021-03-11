@@ -441,8 +441,8 @@ class ResGCAEncoder(ResShortcutEnc):
         super().__init__(block, layers, in_channels, conv_cfg, norm_cfg,
                          act_cfg, with_spectral_norm, late_downsample, order)
 
-        assert in_channels in (4, 6), (
-            f'in_channels must be 4 or 6, but got {in_channels}')
+        # assert in_channels in (4, 6), (
+        #     f'in_channels must be 4 or 6, but got {in_channels}')
 
         self.trimap_channels = in_channels - 3
 
@@ -466,7 +466,6 @@ class ResGCAEncoder(ResShortcutEnc):
                     order=order)
             ]
         self.guidance_head = nn.Sequential(*guidance_head)
-
         self.gca = GCAModule(128, 128)
 
     def init_weights(self, pretrained=None):
