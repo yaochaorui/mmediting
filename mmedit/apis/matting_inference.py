@@ -29,7 +29,8 @@ def init_model(config, checkpoint=None, device='cuda:0'):
     config.test_cfg.metrics = None
     model = build_model(config.model, test_cfg=config.test_cfg)
     if checkpoint is not None:
-        checkpoint = load_checkpoint(model, checkpoint, revise_keys=[(r'^','backbone.'),('bn','gn')])
+        checkpoint = load_checkpoint(
+            model, checkpoint, revise_keys=[(r'^', 'backbone.'), ('bn', 'gn')])
 
     model.cfg = config  # save the config in the model for convenience
     model.to(device)
@@ -71,4 +72,5 @@ def matting_inference(model, img, trimap):
     # forward the model
     with torch.no_grad():
         result = model(test_mode=True, **data)
-    return result['pred_alpha']*255, result['pred_fg']*255, result['pred_bg']*255
+    return result['pred_alpha'] * 255, result['pred_fg'] * 255, result[
+        'pred_bg'] * 255

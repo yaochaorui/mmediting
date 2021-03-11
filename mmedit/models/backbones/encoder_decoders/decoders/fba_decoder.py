@@ -110,31 +110,26 @@ class FBADecoder(nn.Module):
 
         self.unpool = nn.MaxUnpool2d(2, stride=2)
 
-        self.conv_up4 = nn.Sequential(*(list(
-            ConvModule(
-                64 + 3 + 3 + 2,
-                32,
-                padding=1,
-                kernel_size=3,
-                bias=True,
-                conv_cfg=self.conv_cfg,
-                act_cfg=self.act_cfg).children()) + list(
-                    ConvModule(
-                        32,
-                        16,
-                        padding=1,
-                        kernel_size=3,
-                        bias=True,
-                        conv_cfg=self.conv_cfg,
-                        act_cfg=self.act_cfg).children()) + list(
-                            ConvModule(
-                                16,
-                                7,
-                                padding=0,
-                                kernel_size=1,
-                                bias=True,
-                                conv_cfg=self.conv_cfg,
-                                act_cfg=None).children())))
+        self.conv_up4 = nn.Sequential(
+            *(list(
+                ConvModule(
+                    64 + 3 + 3 + 2,
+                    32,
+                    padding=1,
+                    kernel_size=3,
+                    bias=True,
+                    act_cfg=self.act_cfg).children()) + list(
+                        ConvModule(
+                            32,
+                            16,
+                            padding=1,
+                            kernel_size=3,
+                            bias=True,
+                            act_cfg=self.act_cfg).children()) +
+              list(
+                  ConvModule(
+                      16, 7, padding=0, kernel_size=1, bias=True,
+                      act_cfg=None).children())))
 
     def init_weights(self, pretrained=None):
         """Init weights for the model.
@@ -163,7 +158,6 @@ class FBADecoder(nn.Module):
         Returns:
             Tensor: Predicted alpha, fg and bg of the current batch.
         """
-
         conv_out = inputs['conv_out']
         img = inputs['merged']
         two_channel_trimap = inputs['two_channel_trimap']
@@ -202,8 +196,8 @@ class FBADecoder(nn.Module):
             scale_factor=2,
             mode='bilinear',
             align_corners=self.align_corners)
-
         x = torch.cat((x, conv_out[-6][:, :3], img, two_channel_trimap), 1)
+
         output = self.conv_up4(x)
         alpha = torch.clamp(output[:, 0:1], 0, 1)
         F = torch.sigmoid(output[:, 1:4])

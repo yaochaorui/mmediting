@@ -204,37 +204,29 @@ class FBA(BaseMattor):
         pred_alpha = pred_alpha.detach().cpu().numpy().squeeze()
 
         pred_alpha = self.restore_shape(pred_alpha, meta)
-        pred_fg = pred_fg.detach().cpu().numpy().squeeze().transpose(
-            (1, 2, 0))
+        pred_fg = pred_fg.detach().cpu().numpy().squeeze().transpose((1, 2, 0))
         pred_fg = self.restore_shape(pred_fg, meta)
-        pred_bg = pred_bg.detach().cpu().numpy().squeeze().transpose(
-            (1, 2, 0))
+        pred_bg = pred_bg.detach().cpu().numpy().squeeze().transpose((1, 2, 0))
         pred_bg = self.restore_shape(pred_bg, meta)
         trimap = meta[0]['ori_trimap']
         ori_merged = meta[0]['ori_merged']
-        save_path ='/nfs/Code/mmediting/hehe/alpha/hehei'
-
-        save_a = os.path.join(save_path, 'alpha')
-        save_f = os.path.join(save_path, 'fg')
-        save_b = os.path.join(save_path, 'bg')
-
-        self.save_image(pred_alpha, meta, save_a, iteration)
-        self.save_image(pred_fg, meta, save_f, iteration)
-        self.save_image(pred_bg, meta, save_b, iteration)
-
         pred_fg[trimap == 255] = ori_merged[trimap == 255]
         pred_bg[trimap == 0] = ori_merged[trimap == 0]
         eval_result = self.evaluate(pred_alpha, meta)
-        save_ori = os.path.join(save_path, 'ori')
-        self.save_image(ori_merged, meta, save_ori, iteration)
-
+        save_image = True
+        save_path = '/nfs/Code/mmediting/hehe/alpha/hehei'
         if save_image:
             save_a = os.path.join(save_path, 'alpha')
             save_f = os.path.join(save_path, 'fg')
             save_b = os.path.join(save_path, 'bg')
 
             self.save_image(pred_alpha, meta, save_a, iteration)
-            self.save_image(pred_fg, meta, save_f, iteration)
-            self.save_image(pred_bg, meta, save_b, iteration)
+            self.save_image(pred_fg[:, :, ::-1], meta, save_f, iteration)
+            self.save_image(pred_bg[:, :, ::-1], meta, save_b, iteration)
 
-        return {'pred_alpha': pred_alpha, 'pred_fg': pred_fg, 'pred_bg':pred_bg, 'eval_result': eval_result}
+        return {
+            'pred_alpha': pred_alpha,
+            'pred_fg': pred_fg,
+            'pred_bg': pred_bg,
+            'eval_result': eval_result
+        }
