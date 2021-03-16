@@ -81,7 +81,7 @@ data = dict(
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file=f'{data_root}/test_list.json',
+        ann_file=f'{data_root}/tempval.json',
         data_prefix=data_root,
         pipeline=test_pipeline),
     test=dict(
@@ -103,7 +103,7 @@ lr_config = dict(
 
 # checkpoint saving
 checkpoint_config = dict(interval=2000, by_epoch=False)
-evaluation = dict(interval=2000, save_image=False, gpu_collect=False)
+evaluation = dict(interval=5000, save_image=False)
 log_config = dict(
     interval=10,
     hooks=[

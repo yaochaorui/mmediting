@@ -60,7 +60,7 @@ class LoadImageFromFile:
             if self.cache is None:
                 self.cache = dict()
             if filepath in self.cache:
-                img = self.cache[filepath]
+                img = self.cache[filepath].copy()
             else:
                 img_bytes = self.file_client.get(filepath)
                 img = mmcv.imfrombytes(
@@ -162,11 +162,17 @@ class RandomLoadResizeBg:
         kwargs (dict): Args for file client.
     """
 
-    def __init__(self, bg_dir, io_backend='disk', flag='color', **kwargs):
+    def __init__(self,
+                 bg_dir,
+                 io_backend='disk',
+                 flag='color',
+                 channel_order='bgr',
+                 **kwargs):
         self.bg_dir = bg_dir
         self.bg_list = list(mmcv.scandir(bg_dir))
         self.io_backend = io_backend
         self.flag = flag
+        self.channel_order = channel_order
         self.kwargs = kwargs
         self.file_client = None
 
@@ -186,7 +192,9 @@ class RandomLoadResizeBg:
         idx = np.random.randint(len(self.bg_list))
         filepath = Path(self.bg_dir).joinpath(self.bg_list[idx])
         img_bytes = self.file_client.get(filepath)
-        img = mmcv.imfrombytes(img_bytes, flag=self.flag)  # HWC, BGR
+        img = mmcv.imfrombytes(
+            img_bytes, flag=self.flag,
+            channel_order=self.channel_order)  # HWC, BGR
         bg = mmcv.imresize(img, (w, h), interpolation='bicubic')
         results['bg'] = bg
         return results

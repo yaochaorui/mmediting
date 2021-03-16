@@ -158,7 +158,6 @@ class FBADecoder(nn.Module):
         Returns:
             Tensor: Predicted alpha, fg and bg of the current batch.
         """
-
         conv_out = inputs['conv_out']
         img = inputs['merged']
         two_channel_trimap = inputs['two_channel_trimap']
@@ -197,8 +196,8 @@ class FBADecoder(nn.Module):
             scale_factor=2,
             mode='bilinear',
             align_corners=self.align_corners)
-
         x = torch.cat((x, conv_out[-6][:, :3], img, two_channel_trimap), 1)
+
         output = self.conv_up4(x)
         alpha = torch.clamp(output[:, 0:1], 0, 1)
         F = torch.sigmoid(output[:, 1:4])

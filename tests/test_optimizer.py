@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from mmedit.core import build_optimizers
-
+from mmedit.core.optimizer import RAdam
 
 class ExampleModel(nn.Module):
 
@@ -98,3 +98,46 @@ def test_build_optimizers():
                        param_dict['module.model2.weight'])
     assert torch.equal(param_groups['params'][3],
                        param_dict['module.model2.bias'])
+
+def test_radam():
+    base_lr = 0.0001
+    betas=[0.9, 0.0001]
+
+    # basic config with ExampleModel
+    optimizer_cfg = dict(
+        model1=dict(
+            type='RAdam', lr=base_lr, betas=betas, weight_decay=0.1),
+        model2=dict(
+            type='RAdam', lr=base_lr, betas=betas, weight_decay=0.1))
+    model = ExampleModel()
+    optimizers = build_optimizers(model, optimizer_cfg)
+    param_dict = dict(model.named_parameters())
+    assert isinstance(optimizers, dict)
+    for i in range(2):
+        optimizer = optimizers[f'model{i+1}']
+        param_groups = optimizer.param_groups[0]
+
+        assert isinstance(optimizer, RAdam)
+        assert optimizer.defaults['lr'] == base_lr
+        assert optimizer.defaults['betas'] == betas
+        assert optimizer.defaults['weight_decay'] == 0.1
+        assert len(param_groups['params']) == 2
+        assert torch.equal(param_groups['params'][0],
+                           param_dict[f'model{i+1}.weight'])
+        assert torch.equal(param_groups['params'][1],
+                           param_dict[f'model{i+1}.bias'])
+
+    inputs = torch.randn((1,3,320,320),requires_grad=True)
+    target = torch.ones(1,3,320,320)
+    loss_fn = torch.nn.MSELoss(reduction='sum')
+
+    # test step
+    for t in range(2000):
+        y_pred = model(inputs)
+        loss = loss_fn(y_pred, target)
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+test_radam()

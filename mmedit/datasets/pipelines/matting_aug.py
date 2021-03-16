@@ -11,6 +11,7 @@ from .utils import adjust_gamma, random_choose_unknown
 
 
 def add_gaussian_noise(img, mu, sigma):
+    assert img.dtype == np.uint8
     img = img.astype(np.float32)
     gauss_noise = np.random.normal(mu, sigma, img.shape)
     noisy_img = img + gauss_noise
@@ -35,9 +36,12 @@ class MergeFgAndBg:
         Returns:
             dict: A dict containing the processed data and information.
         """
-        alpha = results['alpha'][..., None].astype(np.float32) / 255.
+        alpha = results['alpha'].astype(np.float32) / 255.
         fg = results['fg']
-        bg = results['bg']
+        bg = results['noisy_bg'] if 'noisy_bg' in results.keys() else results['bg']
+        assert fg.max() > 2
+        assert bg.max() > 2
+        assert results['alpha'].max() > 2
         merged = fg * alpha + (1. - alpha) * bg
         results['merged'] = merged
         return results
@@ -583,7 +587,7 @@ class TransformTrimap:
     using Gaussian blurs of the generated two-channel trimap at three
     different scales. The transformed trimap has 6 channels.
 
-    Required key is "trimap", added key is "transformed_trimap" and
+    Required key is "trimap", added key is "trimap_transformed" and
     "two_channel_trimap".
 
     Adopted from the following repository:
@@ -602,6 +606,8 @@ class TransformTrimap:
             dict: A dict containing the processed data and information.
         """
         trimap = results['trimap']
+        if len(trimap.shape) != 2:
+            trimap = trimap.squeeze()
         assert len(trimap.shape) == 2
         h, w = trimap.shape[:2]
         # generate two-channel trimap
@@ -619,7 +625,7 @@ class TransformTrimap:
                 trimap_trans[..., 3 * k:3 * k + 3] = np.exp(
                     dt_mask / (2 * ((factor * L)**2)))
 
-        results['transformed_trimap'] = trimap_trans
+        results['trimap_transformed'] = trimap_trans*255
         results['two_channel_trimap'] = trimap2
         return results
 
