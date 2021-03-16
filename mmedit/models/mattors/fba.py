@@ -213,8 +213,6 @@ class FBA(BaseMattor):
         pred_fg[trimap == 255] = ori_merged[trimap == 255]
         pred_bg[trimap == 0] = ori_merged[trimap == 0]
         eval_result = self.evaluate(pred_alpha, meta)
-        save_image = True
-        save_path = '/nfs/Code/mmediting/hehe/alpha/hehei'
         if save_image:
             save_a = os.path.join(save_path, 'alpha')
             save_f = os.path.join(save_path, 'fg')

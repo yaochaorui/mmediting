@@ -21,6 +21,7 @@ model = dict(
             norm_cfg=dict(type='GN', num_groups=32),
             act_cfg=dict(type='LeakyReLU', inplace=False))),
     loss_alpha=dict(type='L1Loss'),
+    pretrained='/mnt/lustre/yaochaorui/Code/mmediting/resnet50-19c8e357.pth'
     # loss_alpha_lap=dict(type='LapLoss'),
     # loss_alpha_grad=dict(type='GradientLoss'),
     # loss_alpha_compo=dict(type='L1CompositionLoss'),
@@ -44,43 +45,41 @@ alpha_dirs = [
     f'{data_root}Training_set/Adobe-licensed images/alpha',
     f'{data_root}Training_set/Other/alpha'
 ]
-img_norm_cfg = dict(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+img_norm_cfg = dict(mean=[0.406,0.456, 0.485 ], std=[ 0.225, 0.224, 0.229])
+io_backend_cfg = dict(io_backend='memcached',
+        server_list_cfg='/mnt/lustre/share/memcached_client/server_list.conf',
+        client_cfg='/mnt/lustre/share/memcached_client/client.conf')
 
 train_pipeline = [
     dict(
         type='LoadImageFromFile',
         key='alpha',
         flag='grayscale',
-        io_backend='memcached',
-        server_list_cfg='/mnt/lustre/share/memcached_client/server_list.conf',
-        client_cfg='/mnt/lustre/share/memcached_client/client.conf',
+        **io_backend_cfg,
         use_cache=True),
     dict(
         type='LoadImageFromFile',
         key='fg',
-        channel_order='rgb',
-        io_backend='memcached',
-        server_list_cfg='/mnt/lustre/share/memcached_client/server_list.conf',
-        client_cfg='/mnt/lustre/share/memcached_client/client.conf',
+        **io_backend_cfg,
         save_original_img=True,
         use_cache=True),
-    dict(type='RandomLoadResizeBg', bg_dir=bg_dir, channel_order='rgb'),
+    dict(type='RandomLoadResizeBg', bg_dir=bg_dir),
     dict(type='CompositeFg', fg_dirs=fg_dirs, alpha_dirs=alpha_dirs),
+    dict(type='GenerateTrimap', kernel_size=(3, 25)),
     dict(
         type='CropAroundUnknown',
-        keys=['alpha', 'fg', 'bg', 'ori_fg'],
+        unknown_source='trimap',
+        keys=['alpha', 'fg', 'bg', 'ori_fg','trimap'],
         crop_sizes=[320, 480, 640]),
-    dict(type='RandomJitter'),
-    dict(type='Flip', keys=['alpha', 'fg', 'bg']),
+    dict(type='RandomJitter'), #bgr
+    dict(type='Flip', keys=['alpha', 'fg', 'bg','trimap']),
     dict(
         type='Resize',
-        keys=['alpha', 'fg', 'bg', 'ori_fg'],
+        keys=['alpha', 'fg', 'bg', 'ori_fg','trimap'],
         scale=(320, 320),
         keep_ratio=False),
     dict(type='PerturbBg'),
     dict(type='MergeFgAndBg'),
-    dict(type='GenerateTrimap', kernel_size=(3, 25)),
-    dict(type='Pad', keys=['trimap', 'merged'], ds_factor=8, mode='reflect'),
     dict(type='TransformTrimap'),
     dict(
         type='RescaleToZeroOne',
@@ -97,7 +96,7 @@ train_pipeline = [
             'merged_unnormalized', 'alpha', 'fg', 'bg', 'ori_fg',
             'two_channel_trimap'
         ],
-        meta_keys=['pad']),
+        meta_keys=[]),
     dict(
         type='ImageToTensor',
         keys=[
@@ -119,7 +118,6 @@ test_pipeline = [
     dict(
         type='LoadImageFromFile',
         key='merged',
-        channel_order='rgb',
         save_original_img=True),
     dict(type='Pad', keys=['trimap', 'merged'], ds_factor=8, mode='reflect'),
     dict(type='TransformTrimap'),
@@ -146,7 +144,7 @@ test_pipeline = [
         ]),
 ]
 data = dict(
-    workers_per_gpu=8,
+    workers_per_gpu=5,
     train_dataloader=dict(samples_per_gpu=1, drop_last=True),
     val_dataloader=dict(samples_per_gpu=1),
     test_dataloader=dict(samples_per_gpu=1),
@@ -157,7 +155,7 @@ data = dict(
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'tempval.json',
+        ann_file='/mnt/lustre/yaochaorui/Code/mmediting/tempval.json',
         data_prefix=data_root,
         pipeline=test_pipeline),
     test=dict(
@@ -167,22 +165,19 @@ data = dict(
         pipeline=test_pipeline))
 
 # optimizer
-optimizers = dict(
-    type='RAdam',
-    lr=1e-5,
-    betas=[0.9, 0.0001],
-    paramwise_cfg=dict(
-        custom_keys={
-            'ConvWS2d': dict(lr_mult=0.005),
-            'Conv2d': dict(lr_mult=0.005),
-            'GroupNorm': dict(lr_mult=1e-5)
-        }))
+optimizers = dict(type='Adam', lr=1e-5, betas=[0.5, 0.999])
 # learning policy
-lr_config = dict(policy='Step', step=[15], gamma=0.0025, by_epoch=True)
+lr_config = dict(
+    policy='CosineAnnealing',
+    min_lr=0,
+    by_epoch=False,
+    warmup='linear',
+    warmup_iters=5000,
+    warmup_ratio=0.001)
 
 # checkpoint saving
 checkpoint_config = dict(interval=2000, by_epoch=False)
-evaluation = dict(interval=1000, save_image=True)
+evaluation = dict(interval=2000, save_image=True)
 
 log_config = dict(
     interval=100,
@@ -196,8 +191,7 @@ log_config = dict(
 total_iters = 200000
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/fba_real'
+work_dir = './work_dirs/fba_real_4'
 load_from = None
-revise_keys = [(r'^', 'backbone.')]
 resume_from = None
 workflow = [('train', 1)]

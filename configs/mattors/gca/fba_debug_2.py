@@ -54,16 +54,13 @@ train_pipeline = [
     dict(
         type='LoadImageFromFile',
         key='fg',
-        channel_order='rgb',
         **io_backend_cfg,
         save_original_img=True,
         use_cache=True),
-    dict(type='RandomLoadResizeBg', bg_dir=bg_dir, channel_order='rgb'),
+    dict(type='RandomLoadResizeBg', bg_dir=bg_dir),
     dict(type='CompositeFg', fg_dirs=fg_dirs, alpha_dirs=alpha_dirs),
-     dict(
-        type='CropAroundUnknown',
-        keys=['alpha', 'fg', 'bg', 'ori_fg'],
-        crop_sizes=[320, 480, 640]),
+    dict(type='GenerateTrimap', kernel_size=(3, 25)),
+    dict(type='CropAroundCenter', crop_size=512),
     dict(type='RandomJitter'),
     dict(type='Flip', keys=['alpha', 'fg', 'bg']),
     dict(
@@ -71,10 +68,7 @@ train_pipeline = [
         keys=['alpha', 'fg', 'bg','ori_fg'],
         scale=(320, 320),
         keep_ratio=False),
-    dict(type='PerturbBg'),
     dict(type='MergeFgAndBg'),
-    dict(type='GenerateTrimap', kernel_size=(3, 25)),
-    dict(type='Pad', keys=['trimap', 'merged'],ds_factor=32, mode='reflect'),
     dict(type='TransformTrimap'),
     dict(type='RescaleToZeroOne', keys=[
         'merged',
@@ -104,7 +98,6 @@ test_pipeline = [
     dict(
         type='LoadImageFromFile',
         key='merged',
-        channel_order='rgb',
         save_original_img=True),
     dict(type='Pad', keys=['trimap', 'merged'],ds_factor=32, mode='reflect'),
     dict(type='TransformTrimap'),

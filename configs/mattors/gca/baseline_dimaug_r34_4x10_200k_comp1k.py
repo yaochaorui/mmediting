@@ -15,7 +15,7 @@ model = dict(
             layers=[2, 3, 3, 2],
             with_spectral_norm=True)),
     loss_alpha=dict(type='L1Loss'),
-    pretrained='open-mmlab://mmedit/res34_en_nomixup')
+    pretrained='/mnt/lustre/yaochaorui/Code/mmediting/model_best_resnet34_En_nomixup.pth')
 train_cfg = dict(train_backbone=True)
 test_cfg = dict(metrics=['SAD', 'MSE', 'GRAD', 'CONN'])
 
@@ -81,7 +81,7 @@ data = dict(
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file=f'{data_root}/test_list.json',
+        ann_file='/mnt/lustre/yaochaorui/Code/mmediting/tempval.json',
         data_prefix=data_root,
         pipeline=test_pipeline),
     test=dict(

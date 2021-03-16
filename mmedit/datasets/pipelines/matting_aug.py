@@ -11,6 +11,7 @@ from .utils import adjust_gamma, random_choose_unknown
 
 
 def add_gaussian_noise(img, mu, sigma):
+    assert img.dtype == np.uint8
     img = img.astype(np.float32)
     gauss_noise = np.random.normal(mu, sigma, img.shape)
     noisy_img = img + gauss_noise
@@ -37,7 +38,10 @@ class MergeFgAndBg:
         """
         alpha = results['alpha'].astype(np.float32) / 255.
         fg = results['fg']
-        bg = results['bg']
+        bg = results['noisy_bg'] if 'noisy_bg' in results.keys() else results['bg']
+        assert fg.max() > 2
+        assert bg.max() > 2
+        assert results['alpha'].max() > 2
         merged = fg * alpha + (1. - alpha) * bg
         results['merged'] = merged
         return results
@@ -621,7 +625,7 @@ class TransformTrimap:
                 trimap_trans[..., 3 * k:3 * k + 3] = np.exp(
                     dt_mask / (2 * ((factor * L)**2)))
 
-        results['trimap_transformed'] = trimap_trans
+        results['trimap_transformed'] = trimap_trans*255
         results['two_channel_trimap'] = trimap2
         return results
 

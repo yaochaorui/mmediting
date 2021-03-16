@@ -60,7 +60,7 @@ class LoadImageFromFile:
             if self.cache is None:
                 self.cache = dict()
             if filepath in self.cache:
-                img = self.cache[filepath]
+                img = self.cache[filepath].copy()
             else:
                 img_bytes = self.file_client.get(filepath)
                 img = mmcv.imfrombytes(

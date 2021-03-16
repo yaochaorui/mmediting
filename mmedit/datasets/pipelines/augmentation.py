@@ -539,6 +539,7 @@ class RandomJitter:
         # convert back to BGR space
         fg = mmcv.hsv2bgr(fg)
         results['fg'] = fg * 255
+        assert results['fg'].max() < 256 and results['fg'].min() > -1
 
         return results
 
