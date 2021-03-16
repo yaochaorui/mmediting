@@ -21,7 +21,7 @@ model = dict(
             norm_cfg=dict(type='GN', num_groups=32),
             act_cfg=dict(type='LeakyReLU', inplace=False))),
     loss_alpha=dict(type='L1Loss'),
-    pretrained='/mnt/lustre/yaochaorui/Code/mmediting/resnet50-19c8e357.pth'
+    pretrained='/nfs/Code/mmediting/resnet50-19c8e357.pth'
     # loss_alpha_lap=dict(type='LapLoss'),
     # loss_alpha_grad=dict(type='GradientLoss'),
     # loss_alpha_compo=dict(type='L1CompositionLoss'),
@@ -55,12 +55,10 @@ train_pipeline = [
         type='LoadImageFromFile',
         key='alpha',
         flag='grayscale',
-        **io_backend_cfg,
         use_cache=True),
     dict(
         type='LoadImageFromFile',
         key='fg',
-        **io_backend_cfg,
         save_original_img=True,
         use_cache=True),
     dict(type='RandomLoadResizeBg', bg_dir=bg_dir),
@@ -155,7 +153,7 @@ data = dict(
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file='/mnt/lustre/yaochaorui/Code/mmediting/tempval.json',
+        ann_file='/nfs/Code/mmediting/tempval.json',
         data_prefix=data_root,
         pipeline=test_pipeline),
     test=dict(
@@ -177,7 +175,7 @@ lr_config = dict(
 
 # checkpoint saving
 checkpoint_config = dict(interval=2000, by_epoch=False)
-evaluation = dict(interval=2000, save_image=True)
+evaluation = dict(interval=10000, save_image=True)
 
 log_config = dict(
     interval=100,
@@ -193,5 +191,5 @@ dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './work_dirs/fba_real_4'
 load_from = None
-resume_from = None
+resume_from = "/nfs/Code/mmediting/work_dirs/fba_real_4/iter_8000.pth"
 workflow = [('train', 1)]

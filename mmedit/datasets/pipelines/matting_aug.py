@@ -40,7 +40,7 @@ class MergeFgAndBg:
         fg = results['fg']
         bg = results['noisy_bg'] if 'noisy_bg' in results.keys() else results['bg']
         assert fg.max() > 2
-        assert bg.max() > 2
+        # assert bg.max() > 2
         assert results['alpha'].max() > 2
         merged = fg * alpha + (1. - alpha) * bg
         results['merged'] = merged

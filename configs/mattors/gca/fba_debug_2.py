@@ -15,7 +15,7 @@ model = dict(
             layers=[2, 3, 3, 2],
             with_spectral_norm=True)),
     loss_alpha=dict(type='L1Loss'),
-    pretrained='/mnt/lustre/yaochaorui/Code/mmediting/model_best_resnet34_En_nomixup.pth')
+    pretrained='/nfs/Code/mmediting/model_best_resnet34_En_nomixup.pth')
 train_cfg = dict(train_backbone=True)
 test_cfg = dict(metrics=['SAD', 'MSE', 'GRAD', 'CONN'])
 
@@ -49,25 +49,28 @@ train_pipeline = [
         type='LoadImageFromFile',
         key='alpha',
         flag='grayscale',
-        **io_backend_cfg,
         use_cache=True),
     dict(
         type='LoadImageFromFile',
         key='fg',
-        **io_backend_cfg,
         save_original_img=True,
         use_cache=True),
     dict(type='RandomLoadResizeBg', bg_dir=bg_dir),
     dict(type='CompositeFg', fg_dirs=fg_dirs, alpha_dirs=alpha_dirs),
     dict(type='GenerateTrimap', kernel_size=(3, 25)),
-    dict(type='CropAroundCenter', crop_size=512),
+    dict(
+        type='CropAroundUnknown',
+        unknown_source='trimap',
+        keys=['alpha', 'fg', 'bg', 'ori_fg','trimap'],
+        crop_sizes=[320, 480, 640]),
     dict(type='RandomJitter'),
-    dict(type='Flip', keys=['alpha', 'fg', 'bg']),
+    dict(type='Flip', keys=['alpha', 'fg', 'bg','trimap']),
     dict(
         type='Resize',
-        keys=['alpha', 'fg', 'bg','ori_fg'],
+        keys=['alpha', 'fg', 'bg','ori_fg','trimap'],
         scale=(320, 320),
         keep_ratio=False),
+    dict(type='PerturbBg'),
     dict(type='MergeFgAndBg'),
     dict(type='TransformTrimap'),
     dict(type='RescaleToZeroOne', keys=[
@@ -124,7 +127,7 @@ data = dict(
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file='/mnt/lustre/yaochaorui/Code/mmediting/tempval.json',
+        ann_file='/nfs/Code/mmediting/tempval.json',
         data_prefix=data_root,
         pipeline=test_pipeline),
     test=dict(
